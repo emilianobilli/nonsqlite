@@ -199,5 +199,3 @@ def nonSQLiteClient(database):
 	
     return nsql_database(conn)
     
-
-
