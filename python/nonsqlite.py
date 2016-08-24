@@ -22,14 +22,24 @@ DOCUMENT_FIELD = '''CREATE TABLE document_field (
 	            FOREIGN KEY(document_id) REFERENCES document(id))'''
 
 
-get_collections	          = 'SELECT name FROM collection'
-get_collection_query      = 'SELECT id,name FROM collection where name=:name'
-set_collection_query      = 'INSERT into collection     (name)                            VALUES (:name)'
-set_document_query	  = 'INSERT into document       (jobject, collection_id)          VALUES (:jobject, :collection_id)'
-set_document_fields_query = 'INSERT into document_field (document_id, field, value, type) VALUES (:document_id,  :field, :value, :type)'
-get_document_fields_query = 'SELECT document_id FROM document_field where field=:field and value=:value'
-get_document_object       = 'SELECT jobject FROM document where id=:id'
 
+debug_select_all_collections		   = 'SELECT * FROM collection'
+debug_select_all_documents		   = 'SELECT * FROM document'
+debug_select_all_document_fields	   = 'SELECT * FROM document_field'
+
+
+get_collections	           		   = 'SELECT name FROM collection'
+get_collection_query       		   = 'SELECT id,name FROM collection where name=:name'
+set_collection_query       		   = 'INSERT into collection     (name)                            VALUES (:name)'
+set_document_query	   		   = 'INSERT into document       (jobject, collection_id)          VALUES (:jobject, :collection_id)'
+set_document_fields_query  		   = 'INSERT into document_field (document_id, field, value, type) VALUES (:document_id,  :field, :value, :type)'
+get_document_fields_query  		   = 'SELECT document_id FROM document_field where field=:field and value=:value'
+get_document_object        		   = 'SELECT jobject FROM document where id=:id'
+
+get_all_documents_by_collection_id	   = 'SELECT id FROM document    WHERE collection_id=:id'
+delete_all_documents	   		   = 'DELETE FROM document       WHERE collection_id=:id'
+delete_all_document_fields 		   = 'DELETE FROM document_field WHERE document_id=:id'
+delete_collection	   		   = 'DELETE FROM collection     WHERE id=:id' 
 
 
 def __create_tables(conn):
@@ -105,6 +115,31 @@ class nsql_database(object):
     def __init__(self, conn):
 	self.conn = conn
 
+
+    def _debug_dump(self):
+	cursor = self.conn.cursor()
+	
+	cursor.execute(debug_select_all_collections)
+	coll = cursor.fetchall()
+	
+	print '\n----------- COLLECTIONS -------------\n'
+	for c in coll:
+	    print c
+	    
+	cursor.execute(debug_select_all_documents)
+	docs = cursor.fetchall()
+	
+	print '\n----------- DOCUMENTS ---------------\n'
+	for d in docs:
+	    print d
+
+	cursor.execute(debug_select_all_document_fields)
+	dfields = cursor.fetchall()
+	
+	print '\n----------- DOCUMENTS FIELDS --------\n'
+	for d in dfields:
+	    print d
+
     def getCollection(self, collection_name):
 	cursor = self.conn.cursor()
 	cursor.execute(get_collection_query, { 'name': collection_name })
@@ -132,7 +167,25 @@ class nsql_database(object):
 
 
     def dropCollection(self, collection_name):
-	pass
+	cursor = self.conn.cursor()
+	cursor.execute(get_collection_query, { 'name': collection_name })
+	coll = cursor.fetchone()
+	
+	if coll is None:
+	    return
+
+	_id, __none = coll
+
+	cursor.execute(get_all_documents_by_collection_id, { 'id': _id })
+	document_list = cursor.fetchall()
+
+	for document in document_list:
+	    _document_id, = document
+	    cursor.execute(delete_all_document_fields, { 'id' : _document_id })
+	
+	cursor.execute(delete_all_documents, { 'id': _id })
+	cursor.execute(delete_collection,    { 'id': _id })
+    
 
 def nonSQLiteClient(database):
     create_tables = False
