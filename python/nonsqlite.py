@@ -127,7 +127,19 @@ class nsql_collection(object):
 	    self.conn.commit()
     	
     	return '{ object_id: %d }' % document_id
-    	
+
+    def findOne(self, query):
+	return self.find(query, 1)
+
+    def findAll(self, query):
+	return self.find(query, -1)
+
+    def findLikeOne(self, query):
+	return self.find(query, 1, True)
+
+    def findLikeAll(self, query):
+	return self.find(query, -1, True)
+	
     def find(self, query, limit = 1, like=False):
 	keys = query.keys()
 	if len(keys) > 1:
@@ -158,13 +170,23 @@ class nsql_collection(object):
 	    return jobjects_documents
 	else:
 	    i = 0
-	    while i < limit and i < len(document_id_list): 
-		_id, = document_id_list[i]
-		i    = i + 1
-    		cursor.execute(get_document_object, { 'id': _id })
-    		document,  = cursor.fetchone()
-    		jobjects_documents.append({'_id': _id, 'document': document})
-    	    return jobjects_documents
+	    if limit == -1:
+		while i < len(document_id_list): 
+		    _id, = document_id_list[i]
+		    i    = i + 1
+    		    cursor.execute(get_document_object, { 'id': _id })
+    		    document,  = cursor.fetchone()
+    		    jobjects_documents.append({'_id': _id, 'document': document})
+    		return jobjects_documents
+
+	    else:
+		while i < limit and i < len(document_id_list): 
+		    _id, = document_id_list[i]
+		    i    = i + 1
+    		    cursor.execute(get_document_object, { 'id': _id })
+    		    document,  = cursor.fetchone()
+    		    jobjects_documents.append({'_id': _id, 'document': document})
+    		return jobjects_documents
 
     def update (self, objectid, jobject):
 	pass
