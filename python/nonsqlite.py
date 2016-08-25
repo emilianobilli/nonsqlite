@@ -34,6 +34,10 @@ set_collection_query       		   = 'INSERT into collection     (name)            
 set_document_query	   		   = 'INSERT into document       (jobject, collection_id)          VALUES (:jobject, :collection_id)'
 set_document_fields_query  		   = 'INSERT into document_field (document_id, field, value, type) VALUES (:document_id,  :field, :value, :type)'
 get_document_fields_query  		   = 'SELECT document_id FROM document_field where field=:field and value=:value'
+get_document_value_query		   = 'SELECT document_id FROM document_field where value=:value'
+get_document_fields_query_like		   = 'SELECT document_id FROM document_field where field=:field and value LIKE :value'
+get_document_value_query_like		   = 'SELECT document_id FROM document_field where value LIKE :value'
+
 get_document_object        		   = 'SELECT jobject FROM document where id=:id'
 
 get_all_documents_by_collection_id	   = 'SELECT id FROM document    WHERE collection_id=:id'
@@ -50,6 +54,46 @@ def __create_tables(conn):
     conn.commit()
     cursor.execute(DOCUMENT_FIELD)
     conn.commit()
+
+
+class Stack(object):
+    def __init__(self):
+	self.content = []
+    def empty(self):
+	if len(self.content) > 0:
+	    return False
+	return True
+    def push(self, obj):
+	self.content.append(obj)
+    def pop(self):
+	if not self.empty():
+	    return self.content.pop()
+	return None
+	    
+
+
+def toupletify (value, field_string, touple_list):
+    s = Stack()
+    if type(value).__name__ == 'dict':
+	for key in value.keys():
+	    s.push(key)
+    
+	key = s.pop()
+	while key is not None:
+	    if field_string == '':
+		toupletify(value[key], key, touple_list)
+	    else:
+		toupletify(value[key], field_string + '.' + key, touple_list)
+	    key = s.pop()
+
+    elif type(value).__name__ == 'list':
+	for element in value:
+	    touple_list.append((field_string, element))
+    else:
+	touple_list.append((field_string,value))
+
+    return
+
     	
 
 class nsql_collection(object):
@@ -67,30 +111,47 @@ class nsql_collection(object):
 	cursor.execute(set_document_query, { 'jobject': jobject, 'collection_id': self.id })
 	document_id = cursor.lastrowid
 	self.conn.commit()
-    	
-    	for key in native_json.keys():
-    	    field = key
-    	    value = str(native_json[key])
-    	    t     = type(native_json[key]).__name__
+
+
+	touple_list = []
+	toupletify(native_json, '', touple_list)
+
+	for touple in touple_list:
+	    field, value = touple
+	    t = type(value).__name__	
+#    	for key in native_json.keys():
+#    	    field = key
+#    	    value = str(native_json[key])
+#    	    t     = type(native_json[key]).__name__
 	    cursor.execute(set_document_fields_query, {'document_id': document_id, 'field': field, 'value': value, 'type': t})
 	    self.conn.commit()
     	
     	return '{ object_id: %d }' % document_id
     	
-    def find(self, query, limit = 1):
+    def find(self, query, limit = 1, like=False):
 	keys = query.keys()
 	if len(keys) > 1:
 	    return None
 	
 	field = keys[0]
-	if type(query[field]).__name__ == 'int':
+	if type(query[field]).__name__ == 'int' or type(query[field]).__name__ == 'float':
 	    value = str(query[field])	
 	else:
 	    value = query[field]
 	        	
-    	cursor = self.conn.cursor()
-    	cursor.execute(get_document_fields_query, {'field': field, 'value': value})
-    	document_id_list = cursor.fetchall()
+
+	cursor = self.conn.cursor()
+	if field == '$':
+	    if like:
+		cursor.execute(get_document_value_query_like, {'value' : value})
+	    else:
+		cursor.execute(get_document_value_query, {'value' : value})
+    	else:
+	    if like:
+    		cursor.execute(get_document_fields_query_like, {'field': field, 'value': value})
+	    else:
+		cursor.execute(get_document_fields_query, {'field': field, 'value': value})
+	document_id_list = cursor.fetchall()
 
 	jobjects_documents = []
 	if len(document_id_list) == 0:
@@ -185,7 +246,7 @@ class nsql_database(object):
 	
 	cursor.execute(delete_all_documents, { 'id': _id })
 	cursor.execute(delete_collection,    { 'id': _id })
-    
+	self.conn.commit()
 
 def nonSQLiteClient(database):
     create_tables = False

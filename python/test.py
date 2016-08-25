@@ -35,18 +35,26 @@ print pepe.find( { 'edad': 21 })
 # Busqueda por name == "Jeronimo"
 print "Busqueda name: Jeronimo"
 print pepe.find( { 'name': 'Jeronimo' })
+print "Busqueda compuesta"
+print pepe.find( { 'edad.algo': 1 })
+print "Busqueda en array"
+print pepe.find( { 'otra' : 4 } )
 
-db._debug_dump()
+print "Busqueda por cualquier valor"
+x =  pepe.find( { 'name': '%nimo%' }, 10, True)
+for i in x:
+    print i
+#db._debug_dump()
 
 #
 # Muestra las colecciones
 print db.showCollections()
-db.dropCollection('pepe')
+print db.dropCollection('pepe')
 print db.showCollections()
 
-db._debug_dump()
-db.getCollection('felipe')
-db._debug_dump()
+#db._debug_dump()
+#db.getCollection('felipe')
+#db._debug_dump()
 
 
 
