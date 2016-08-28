@@ -15,7 +15,8 @@ DOCUMENT   = '''CREATE TABLE document (
 
 DOCUMENT_FIELD = '''CREATE TABLE document_field (
 		    id INTEGER PRIMARY KEY AUTOINCREMENT,
-	            document_id INTEGER,
+	            document_id   INTEGER,
+		    collection_id INTEGER,
 	            field  TEXT,
 	            value  TEXT,
 	            type   TEXT,
@@ -32,15 +33,17 @@ get_collections	           		   = 'SELECT name FROM collection'
 get_collection_query       		   = 'SELECT id,name FROM collection where name=:name'
 set_collection_query       		   = 'INSERT into collection     (name)                            VALUES (:name)'
 set_document_query	   		   = 'INSERT into document       (jobject, collection_id)          VALUES (:jobject, :collection_id)'
-set_document_fields_query  		   = 'INSERT into document_field (document_id, field, value, type) VALUES (:document_id,  :field, :value, :type)'
-get_document_fields_query  		   = 'SELECT document_id FROM document_field where field=:field and value=:value'
-get_document_value_query		   = 'SELECT document_id FROM document_field where value=:value'
-get_document_fields_query_like		   = 'SELECT document_id FROM document_field where field=:field and value LIKE :value'
-get_document_value_query_like		   = 'SELECT document_id FROM document_field where value LIKE :value'
+set_document_fields_query  		   = 'INSERT into document_field (document_id, collection_id, field, value, type) VALUES (:document_id, :collection_id, :field, :value, :type)'
+get_document_fields_query  		   = 'SELECT document_id FROM document_field where collection_id=:collection_id and field=:field and value=:value'
+get_document_value_query		   = 'SELECT document_id FROM document_field where collection_id=:collection_id and value=:value'
+get_document_fields_query_like		   = 'SELECT document_id FROM document_field where collection_id=:collection_id and field=:field and value LIKE :value'
+get_document_value_query_like		   = 'SELECT document_id FROM document_field where collection_id=:collection_id and value LIKE :value'
+count_document_fields_query		   = 'SELECT count(*) FROM document_field where collection_id=:collection_id and field=:field and value=:value'
 
 get_document_object        		   = 'SELECT jobject FROM document where id=:id'
 
-get_all_documents_by_collection_id	   = 'SELECT id FROM document    WHERE collection_id=:id'
+get_all_id_documents_by_collection_id	   = 'SELECT id FROM document    WHERE collection_id=:id'
+get_all_documents_by_collection_id	   = 'SELECT id, jobject FROM document WHERE collection_id=:id'
 delete_all_documents	   		   = 'DELETE FROM document       WHERE collection_id=:id'
 delete_all_document_fields 		   = 'DELETE FROM document_field WHERE document_id=:id'
 delete_collection	   		   = 'DELETE FROM collection     WHERE id=:id' 
@@ -123,7 +126,7 @@ class nsql_collection(object):
 #    	    field = key
 #    	    value = str(native_json[key])
 #    	    t     = type(native_json[key]).__name__
-	    cursor.execute(set_document_fields_query, {'document_id': document_id, 'field': field, 'value': value, 'type': t})
+	    cursor.execute(set_document_fields_query, {'document_id': document_id, 'collection_id': self.id, 'field': field, 'value': value, 'type': t})
 	    self.conn.commit()
     	
     	return '{ object_id: %d }' % document_id
@@ -140,6 +143,44 @@ class nsql_collection(object):
     def findLikeAll(self, query):
 	return self.find(query, -1, True)
 	
+    def count(self, query):
+	keys = query.keys()
+	if len(keys) > 1:
+	    return None
+	
+	field = keys[0]
+	if type(query[field]).__name__ == 'int' or type(query[field]).__name__ == 'float':
+	    value = str(query[field])	
+	else:
+	    value = query[field]
+
+	cursor = self.conn.cursor()
+	cursor.execute(count_document_fields_query, {'field': field, 'value': value, 'collection_id': self.id})
+	c, = cursor.fetchone() 
+	return c
+
+    def get(self, oid):
+	cursor = self.conn.cursor()
+	cursor.execute(get_document_object, { 'id': oid})
+	try:
+	    document, = cursor.fetchone()
+	    return {'_id': oid, 'document': document}
+	except:
+	    return None
+
+    def all(self):
+	cursor = self.conn.cursor()
+
+	cursor.execute(get_all_documents_by_collection_id, {'id': self.id})
+	_all = cursor.fetchall()
+
+	jobjects_documents = []
+	for i in _all:
+	    _id, document = i
+	    jobjects_documents.append({'_id': _id, 'document': document})
+	
+	return jobjects_documents
+
     def find(self, query, limit = 1, like=False):
 	keys = query.keys()
 	if len(keys) > 1:
@@ -155,15 +196,26 @@ class nsql_collection(object):
 	cursor = self.conn.cursor()
 	if field == '$':
 	    if like:
-		cursor.execute(get_document_value_query_like, {'value' : value})
+		cursor.execute(get_document_value_query_like, {'value' : value, 'collection_id': self.id})
 	    else:
-		cursor.execute(get_document_value_query, {'value' : value})
+		cursor.execute(get_document_value_query, {'value' : value, 'collection_id': self.id})
     	else:
 	    if like:
-    		cursor.execute(get_document_fields_query_like, {'field': field, 'value': value})
+    		cursor.execute(get_document_fields_query_like, {'field': field, 'value': value, 'collection_id': self.id})
 	    else:
-		cursor.execute(get_document_fields_query, {'field': field, 'value': value})
-	document_id_list = cursor.fetchall()
+		cursor.execute(get_document_fields_query, {'field': field, 'value': value, 'collection_id': self.id})
+
+	if limit == 1:
+	    document_id_list = [cursor.fetchone()]
+	else:    
+	    document_id_list = cursor.fetchall()
+
+	temp = []
+	for d in document_id_list:
+	    if d not in temp:
+		temp.append(d)
+
+	document_id_list = temp
 
 	jobjects_documents = []
 	if len(document_id_list) == 0:
@@ -259,7 +311,7 @@ class nsql_database(object):
 
 	_id, __none = coll
 
-	cursor.execute(get_all_documents_by_collection_id, { 'id': _id })
+	cursor.execute(get_all_id_documents_by_collection_id, { 'id': _id })
 	document_list = cursor.fetchall()
 
 	for document in document_list:
