@@ -46,8 +46,9 @@ get_all_id_documents_by_collection_id	   = 'SELECT id FROM document    WHERE col
 get_all_documents_by_collection_id	   = 'SELECT id, jobject FROM document WHERE collection_id=:id'
 delete_all_documents	   		   = 'DELETE FROM document       WHERE collection_id=:id'
 delete_all_document_fields 		   = 'DELETE FROM document_field WHERE document_id=:id'
+delete_document				   = 'DELETE FROM document	 WHERE id=:id'
 delete_collection	   		   = 'DELETE FROM collection     WHERE id=:id' 
-
+update_document				   = 'UPDATE document SET jobject=:jobject WHERE id=:id and collection_id=:collection_id'
 
 def __create_tables(conn):
     cursor = conn.cursor()
@@ -106,6 +107,23 @@ class nsql_collection(object):
     	self.conn = conn
     	
     
+    def update(self, did, jobject):
+	native_json = json.loads(jobject)
+	self.__delete_all_document_fields(did)
+	cursor = self.conn.cursor()
+	cursor.execute(update_document, {'jobject': jobject, 'id': did, 'collection_id': self.id})
+	self.conn.commit()
+
+	touple_list = []
+	toupletify(native_json, '', touple_list)
+
+	for touple in touple_list:
+	    field, value = touple
+	    t = type(value).__name__	
+	    cursor.execute(set_document_fields_query, {'document_id': did, 'collection_id': self.id, 'field': field, 'value': value, 'type': t})
+	    self.conn.commit()
+
+
     def insert(self, jobject):
 	native_json = json.loads(jobject)
 	# Primero se crea el document	
@@ -122,14 +140,10 @@ class nsql_collection(object):
 	for touple in touple_list:
 	    field, value = touple
 	    t = type(value).__name__	
-#    	for key in native_json.keys():
-#    	    field = key
-#    	    value = str(native_json[key])
-#    	    t     = type(native_json[key]).__name__
 	    cursor.execute(set_document_fields_query, {'document_id': document_id, 'collection_id': self.id, 'field': field, 'value': value, 'type': t})
 	    self.conn.commit()
     	
-    	return '{ object_id: %d }' % document_id
+    	return { 'object_id': document_id }
 
     def findOne(self, query):
 	return self.find(query, 1)
@@ -161,7 +175,7 @@ class nsql_collection(object):
 
     def get(self, oid):
 	cursor = self.conn.cursor()
-	cursor.execute(get_document_object, { 'id': oid})
+	cursor.execute(get_document_object, { 'id': oid })
 	try:
 	    document, = cursor.fetchone()
 	    return {'_id': oid, 'document': document}
@@ -212,7 +226,7 @@ class nsql_collection(object):
 
 	temp = []
 	for d in document_id_list:
-	    if d not in temp:
+	    if d not in temp and d != None:
 		temp.append(d)
 
 	document_id_list = temp
@@ -240,11 +254,29 @@ class nsql_collection(object):
     		    jobjects_documents.append({'_id': _id, 'document': document})
     		return jobjects_documents
 
-    def update (self, objectid, jobject):
-	pass
-    
+
+    def __delete_all_document_fields(self, did):
+	cursor = self.conn.cursor()
+	cursor.execute(delete_all_document_fields, {'id': did} )
+	self.conn.commit()
+
+    def getDocument(self, did):
+	cursor = self.conn.cursor()
+	cursor.execute(get_document_object, { 'id' : did })
+	document,  = cursor.fetchone()
+    	jobjects_documents.append({'_id': _id, 'document': document})
+    	return jobjects_documents
+
+    def deleteDocument(self, did):
+	cursor = self.conn.cursor()
+	self.__delete_all_document_fields(did)
+	cursor.execute(delete_document, {'id': did})	
+	self.conn.commit()
+
     def delete (self, filter):
 	pass
+
+
     	    	
 class nsql_database(object):
     def __init__(self, conn):
