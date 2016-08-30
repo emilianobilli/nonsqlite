@@ -40,7 +40,7 @@ get_document_fields_query_like		   = 'SELECT document_id FROM document_field whe
 get_document_value_query_like		   = 'SELECT document_id FROM document_field where collection_id=:collection_id and value LIKE :value'
 count_document_fields_query		   = 'SELECT count(*) FROM document_field where collection_id=:collection_id and field=:field and value=:value'
 
-get_document_object        		   = 'SELECT jobject FROM document where id=:id'
+get_document_object        		   = 'SELECT jobject FROM document where id=:id and collection_id=:collection_id'
 
 get_all_id_documents_by_collection_id	   = 'SELECT id FROM document    WHERE collection_id=:id'
 get_all_documents_by_collection_id	   = 'SELECT id, jobject FROM document WHERE collection_id=:id'
@@ -163,7 +163,7 @@ class nsql_collection(object):
 	    return None
 	
 	field = keys[0]
-	if type(query[field]).__name__ == 'int' or type(query[field]).__name__ == 'float':
+	if type(query[field]).__name__ == 'int' or type(query[field]).__name__ == 'float' or type(query[field]).__name__ == 'bool':
 	    value = str(query[field])	
 	else:
 	    value = query[field]
@@ -175,7 +175,7 @@ class nsql_collection(object):
 
     def get(self, oid):
 	cursor = self.conn.cursor()
-	cursor.execute(get_document_object, { 'id': oid })
+	cursor.execute(get_document_object, { 'id': oid, 'collection_id': self.id })
 	try:
 	    document, = cursor.fetchone()
 	    return {'_id': oid, 'document': document}
@@ -240,7 +240,7 @@ class nsql_collection(object):
 		while i < len(document_id_list): 
 		    _id, = document_id_list[i]
 		    i    = i + 1
-    		    cursor.execute(get_document_object, { 'id': _id })
+    		    cursor.execute(get_document_object, { 'id': _id, 'collection_id': self.id })
     		    document,  = cursor.fetchone()
     		    jobjects_documents.append({'_id': _id, 'document': document})
     		return jobjects_documents
@@ -249,7 +249,7 @@ class nsql_collection(object):
 		while i < limit and i < len(document_id_list): 
 		    _id, = document_id_list[i]
 		    i    = i + 1
-    		    cursor.execute(get_document_object, { 'id': _id })
+    		    cursor.execute(get_document_object, { 'id': _id, 'collection_id': self.id })
     		    document,  = cursor.fetchone()
     		    jobjects_documents.append({'_id': _id, 'document': document})
     		return jobjects_documents
