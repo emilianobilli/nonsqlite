@@ -55,6 +55,15 @@ class Object(object):
 	
 	return ret
 
+    def all(self):
+	ret = []
+	element_list = self._collection.all()
+	for element in element_list:
+	    obj = self.__load_document(element)
+	    ret.append(obj)
+	
+	return ret
+
     def getbyid(self, oid):
 	ret = self._collection.get(oid)
 	if ret is not None:
