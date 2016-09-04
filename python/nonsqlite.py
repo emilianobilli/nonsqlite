@@ -244,7 +244,6 @@ class nsql_collection(object):
     		    document,  = cursor.fetchone()
     		    jobjects_documents.append({'_id': _id, 'document': document})
     		return jobjects_documents
-
 	    else:
 		while i < limit and i < len(document_id_list): 
 		    _id, = document_id_list[i]

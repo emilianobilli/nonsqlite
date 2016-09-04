@@ -1,36 +1,127 @@
 from nonsqlite import nonSQLiteClient
-from json      import dumps
-from json      import loads
-
+from json import dumps
+from json import loads
 
 class Object(object):
-    def __init__(self):
-	self._collection = nonSQLiteClient('orm.db').getCollection(self.__class__.__name__)
-	self._id 	 = None
+    _db         = nonSQLiteClient('Object.db')
+    _collection = None
 
-    def checktype(self, obj):
+    @classmethod
+    def init(cls):
+	cls._collection = cls._db.getCollection(cls.__name__)
+
+    @classmethod
+    def checktype(cls, obj):
+	if cls._collection is None:
+	    cls.init()
+
 	if (type(obj).__name__ != 'int'   and 
 	    type(obj).__name__ != 'str'   and 
 	    type(obj).__name__ != 'list'  and 
 	    type(obj).__name__ != 'dict'  and 
 	    type(obj).__name__ != 'float' and 
+	    type(obj).__name__ != 'unicode' and
 	    type(obj).__name__ != 'bool'):
 	    return True
 	else:
 	    return False
 
+    @classmethod
+    def filter(cls, query, limit=-1):
+	if cls._collection is None:
+	    cls.init()
+
+	ret = []
+	element_list = cls._collection.find(query, limit)
+	for element in element_list:
+	    obj = cls.__load_document(element)
+	    ret.append(obj)
+	
+	return ret
+
+    @classmethod
+    def like(cls, query, limit=-1):
+	if cls._collection is None:
+	    cls.init()
+	ret = []
+	element_list = cls._collection.find(query, limit, True)
+	for element in element_list:
+	    obj = cls.__load_document(element)
+	    ret.append(obj)
+	return ret
+
+    @classmethod
+    def all(cls):
+	if cls._collection is None:
+	    cls.init()
+
+	ret = []
+	element_list = cls._collection.all()
+	for element in element_list:
+	    obj = cls.__load_document(element)
+	    ret.append(obj)
+	
+	return ret
+
+    @classmethod
+    def getbyid(cls, oid):
+	if cls._collection is None:
+	    cls.init()
+	ret = cls._collection.get(oid)
+	if ret is not None:
+	    return cls.__load_document(ret)
+
+    @classmethod
+    def get(cls, query):
+	if cls._collection is None:
+	    cls.init()
+	ret = cls._collection.findOne(query)
+	if ret != []:
+	    return cls.__load_document(ret[0])
+
+
+    @classmethod
+    def __load_document(cls, document):
+	doc     = loads(document['document'])
+	keys    = doc.keys()
+	obj     = cls()
+	obj._id = document['_id']
+
+	# Si el objecto tiene atributos por definicion
+	# Estos son los objectos "fuertemente tipados"
+	objkeys  = vars(obj)
+	for key in keys:
+	    if key in objkeys:
+	        if cls.checktype(obj.__dict__[key]):
+		    o, = obj.__dict__[key].__class__.__bases__
+		    if o.__name__ == 'Object':
+		        obj.__dict__[key] = obj.__dict__[key].getbyid(doc[key])
+		else:
+		    obj.__setattr__(key, doc[key])
+	    else:
+		obj.__setattr__(key, doc[key])
+	return obj
+
+    def __init__(self):
+	self._id = None
+
     def getid(self):
-	return self._id
+	if '_id' in vars(self).keys():
+	    return self._id
+	return None
 
     def save(self):
 	fields = vars(self)
 	keys   = fields.keys()
+
+	if not '_id' in vars(self).keys():
+	    self._id = None
 	
 	doc = {}
 	
 	for key in keys:
 	    if key != '_id' and key != '_collection':
-		if self.checktype(fields[key]):
+		if self.__class__.checktype(fields[key]):
 		    o, = fields[key].__class__.__bases__
 		    if o.__name__ == 'Object':
 			doc[key] = fields[key].getid()
@@ -38,61 +129,12 @@ class Object(object):
 		    doc[key] = fields[key]
 
 	if self._id is None:
-	    ret = self._collection.insert(dumps(doc))
+	    ret = self.__class__._collection.insert(dumps(doc))
 	    self._id = ret['object_id']
 	else:
-	    self._collection.update(self._id, dumps(doc))
+	    self.__class__._collection.update(self._id, dumps(doc))
 
     def delete(self):
-	self._collection.deleteDocument(self._id)
-
-    def filter(self, query):
-	ret = []
-	element_list = self._collection.find(query, -1)
-	for element in element_list:
-	    obj = self.__load_document(element)
-	    ret.append(obj)
-	
-	return ret
-
-    def all(self):
-	ret = []
-	element_list = self._collection.all()
-	for element in element_list:
-	    obj = self.__load_document(element)
-	    ret.append(obj)
-	
-	return ret
-
-    def getbyid(self, oid):
-	ret = self._collection.get(oid)
-	if ret is not None:
-	    return self.__load_document(ret)
-
-    def get(self, query):
-	ret = self._collection.findOne(query)
-	if ret != []:
-	    return self.__load_document(ret[0])
-
-    def __load_document(self, document):
-	    doc     = loads(document['document'])
-	    keys    = doc.keys()
-	    obj     = self.__class__()
-	    obj._id = document['_id']
-	    
-	    # Si el objecto tiene atributos por definicion
-	    # Estos son los objectos "fuertemente tipados"
-	    objkeys  = vars(obj)
-	    for key in keys:
-		if key in objkeys:
-		    if self.checktype(obj.__dict__[key]):
-			o, = obj.__dict__[key].__class__.__bases__
-			if o.__name__ == 'Object':
-			    obj.__dict__[key].getbyid(doc[key])
-		    else:
-			obj.__setattr__(key, doc[key])
-		else:
-		    obj.__setattr__(key, doc[key])
-	    return obj
-
+	self.__class__._collection.deleteDocument(self._id)    
+    
 
