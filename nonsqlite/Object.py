@@ -122,7 +122,6 @@ class Object(object):
 
     @classmethod
     def __load_document(cls, document):
-	print document['document']
 	doc     = loads(document['document'])
 	keys    = doc.keys()
 	obj     = cls()
