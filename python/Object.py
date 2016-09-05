@@ -64,6 +64,22 @@ class Object(object):
 	return ret
 
     @classmethod
+    def filterOR(cls, querylist=[]):
+	ret     = []
+	for query in querylist:
+	    objects = cls.filter(query)
+	    for o in objects:
+		flag = False
+		for r in ret:
+		    if r.getid() == o.getid():
+			flag = True
+			break
+		if not flag:
+		    ret.append(o)
+	return ret
+
+
+    @classmethod
     def like(cls, query, limit=-1):
 	if cls._collection is None:
 	    cls.init()
