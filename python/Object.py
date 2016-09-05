@@ -82,6 +82,7 @@ class Object(object):
 
     @classmethod
     def __load_document(cls, document):
+	print document['document']
 	doc     = loads(document['document'])
 	keys    = doc.keys()
 	obj     = cls()
@@ -97,6 +98,9 @@ class Object(object):
 		    if o.__name__ == 'Object':
 		        obj.__dict__[key] = obj.__dict__[key].getbyid(doc[key])
 		else:
+		    #if type(obj.__dict__[key]).__name__ == 'list':
+		    #	obj.__dict__[key].append(doc[key])
+		    #else:
 		    obj.__setattr__(key, doc[key])
 	    else:
 		obj.__setattr__(key, doc[key])
