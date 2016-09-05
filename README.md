@@ -46,3 +46,8 @@ for i in a:
 ```
 a = Person.filter({'$': 'Piter'})
 ```
+### Delete an Object in collection
+```
+a = Person.get({'name': 'Piter'})
+a.delete()
+```
