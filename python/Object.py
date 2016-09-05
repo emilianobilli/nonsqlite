@@ -40,6 +40,30 @@ class Object(object):
 	return ret
 
     @classmethod
+    def filterAND(cls, querylist=[]):
+	ret     = []
+	objects = []
+	for query in querylist:
+	    objects.append(cls.filter(query))
+
+	candidates = objects[0]
+    
+	if len(objects) == 1:
+	    return candidates
+
+	for c in candidates:
+	    flag = False
+	    for o in objects[1:]:
+		for obj in o:
+		    if c.getid() == obj.getid():
+			flag = True
+
+	    if flag:
+	        ret.append(c)
+
+	return ret
+
+    @classmethod
     def like(cls, query, limit=-1):
 	if cls._collection is None:
 	    cls.init()
