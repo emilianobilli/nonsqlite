@@ -22,7 +22,7 @@ class Person(Object):
 ```
 a = Person()
 a.name = 'Piter'
-a.sex  = 21
+a.age  = 21
 a.save()
 ```
 ### Query Objects in collection
