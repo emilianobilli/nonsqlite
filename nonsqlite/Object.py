@@ -2,12 +2,17 @@ from nonsqlite import nonSQLiteClient
 from json import dumps
 from json import loads
 
+
 class Object(object):
-    _db         = nonSQLiteClient('Object.db')
+    _db         = None 
     _collection = None
+    _db_name	= ''
 
     @classmethod
     def init(cls):
+	if cls._db_name == '':
+	    cls._db_name = 'Object.db'
+	cls._db		= nonSQLiteClient(cls._db_name)
 	cls._collection = cls._db.getCollection(cls.__name__)
 
     @classmethod
@@ -41,6 +46,8 @@ class Object(object):
 
     @classmethod
     def filterAND(cls, querylist=[]):
+	if cls._collection is None:
+	    cls.init()
 	ret     = []
 	objects = []
 	for query in querylist:
@@ -65,6 +72,8 @@ class Object(object):
 
     @classmethod
     def filterOR(cls, querylist=[]):
+	if cls._collection is None:
+	    cls.init()
 	ret     = []
 	for query in querylist:
 	    objects = cls.filter(query)
