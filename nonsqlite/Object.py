@@ -171,6 +171,9 @@ class Object(object):
 	return None
 
     def save(self):
+	if self.__class__._collection is None:
+	    self.__class__.init()
+
 	fields = vars(self)
 	keys   = fields.keys()
 
