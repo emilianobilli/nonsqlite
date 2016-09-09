@@ -100,6 +100,18 @@ class Object(object):
 	return ret
 
     @classmethod
+    def dumps(cls):
+	if cls._collection is None:
+	    cls.init()
+
+	ret = []
+	element_list = cls._collection.all()
+	for element in element_list:
+	    ret.append(element['document'])
+
+	return dumps(ret)
+
+    @classmethod
     def all(cls):
 	if cls._collection is None:
 	    cls.init()
