@@ -107,7 +107,7 @@ class Object(object):
 	ret = []
 	element_list = cls._collection.all()
 	for element in element_list:
-	    ret.append(element['document'])
+	    ret.append(loads(element['document']))
 
 	return dumps(ret)
 

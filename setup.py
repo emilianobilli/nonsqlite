@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='nonsqlite',
-      version='0.6.3',
+      version='0.6.4',
       description='Non SQL Database',
       url='https://github.com/emilianobilli/nonsqlite',
       author='Emiliano Billi',
