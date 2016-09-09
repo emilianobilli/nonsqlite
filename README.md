@@ -8,7 +8,7 @@ This package install nonsqlite and Object modules
 
 ## Object Module
 Micro ORM Framework
-### Create a new Object collecion
+### Create a new Object collection
 ```
 from nonsqlite.Object import Object
 
@@ -18,6 +18,13 @@ class Person(Object):
     self.name = ''
     self.age  = 0
 ```  
+### Specify the database to save the collection
+```
+Person._db_name = 'db.db'
+```
+If the _db_name is omitted, Object use the default database: Object.db in the current directory
+
+
 ### Save a new Object in collection
 ```
 a = Person()
@@ -25,6 +32,14 @@ a.name = 'Piter'
 a.age  = 21
 a.save()
 ```
+
+### Load the object from a json
+```
+a = Person.loads(json)
+a.save()
+```
+
+
 ### Query Objects in collection
 - Get one object
 ```
