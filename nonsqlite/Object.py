@@ -128,6 +128,14 @@ class Object(object):
 	if ret != []:
 	    return cls.__load_document(ret[0])
 
+    @classmethod
+    def loads(cls, document):
+	element = {}
+	element['document'] = document
+	element['_id']      = None
+	if cls._collection is None:
+	    cls.init()
+	return cls.__load_document(element)
 
     @classmethod
     def __load_document(cls, document):
