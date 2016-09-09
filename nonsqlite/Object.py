@@ -128,11 +128,19 @@ class Object(object):
 	if ret != []:
 	    return cls.__load_document(ret[0])
 
+
+    @classmethod
+    def fromJsonList(cls, jsonlist=[]):
+	for json in jsonlist:
+	    obj = cls.loads(json)
+	    obj.save()
+
     @classmethod
     def loads(cls, document):
 	element = {}
 	element['document'] = document
 	element['_id']      = None
+
 	if cls._collection is None:
 	    cls.init()
 	return cls.__load_document(element)
