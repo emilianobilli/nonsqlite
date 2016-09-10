@@ -31,8 +31,17 @@ class Object(object):
 	else:
 	    return False
 
+
+    @staticmethod
+    def sort(objlist, keytosort):
+	if key.startswith('-'):
+	    keytosort = keytosort[1:]
+	    return sorted(objlist, key=lambda k: k[keytosort], reverse=True) 
+	else:
+	    return sorted(objlist, key=lambda k: k[keytosort])
+
     @classmethod
-    def filter(cls, query, limit=-1):
+    def filter(cls, query, limit=-1, sort=None):
 	if cls._collection is None:
 	    cls.init()
 
@@ -42,10 +51,13 @@ class Object(object):
 	    obj = cls.__load_document(element)
 	    ret.append(obj)
 	
-	return ret
+	if sort is None:
+	    return ret
+	else:
+	    return cls.sort(ret, sort)
 
     @classmethod
-    def filterAND(cls, querylist=[]):
+    def filterAND(cls, querylist=[], sort=None):
 	if cls._collection is None:
 	    cls.init()
 	ret     = []
@@ -68,10 +80,13 @@ class Object(object):
 	    if flag:
 	        ret.append(c)
 
-	return ret
+	if sort is None:
+	    return ret
+	else:
+	    return cls.sort(ret, sort)
 
     @classmethod
-    def filterOR(cls, querylist=[]):
+    def filterOR(cls, querylist=[], sort=None):
 	if cls._collection is None:
 	    cls.init()
 	ret     = []
@@ -85,11 +100,16 @@ class Object(object):
 			break
 		if not flag:
 		    ret.append(o)
-	return ret
+
+	if sort is None:
+	    return ret
+	else:
+	    return cls.sort(ret, sort)
+
 
 
     @classmethod
-    def like(cls, query, limit=-1):
+    def like(cls, query, limit=-1, sort=None):
 	if cls._collection is None:
 	    cls.init()
 	ret = []
@@ -97,7 +117,12 @@ class Object(object):
 	for element in element_list:
 	    obj = cls.__load_document(element)
 	    ret.append(obj)
-	return ret
+
+
+	if sort is None:
+	    return ret
+	else:
+	    return cls.sort(ret, sort)
 
     @classmethod
     def dumps(cls):
@@ -112,7 +137,7 @@ class Object(object):
 	return dumps(ret)
 
     @classmethod
-    def all(cls):
+    def all(cls, sort=None):
 	if cls._collection is None:
 	    cls.init()
 
@@ -122,7 +147,10 @@ class Object(object):
 	    obj = cls.__load_document(element)
 	    ret.append(obj)
 	
-	return ret
+	if sort is None:
+	    return ret
+	else:
+	    return cls.sort(ret, sort)
 
     @classmethod
     def getbyid(cls, oid):
