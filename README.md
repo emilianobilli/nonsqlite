@@ -46,9 +46,9 @@ a.save()
 a = Person.get({'name': 'Piter'})
 print a.name
 ```
-- Get list of coincidences: ```filter({}), filterAND([{}]), filterOR([{}])```
+- Get list of coincidences: ```filter({}, limit=, sort=), filterAND([{}]), filterOR([{}])```
 ```
-a = Person.filter({'name': 'Piter'})
+a = Person.filter({'name': 'Piter'}, sort='-age') # Order by age desc
 for i in a:
   print i.name
 ```
