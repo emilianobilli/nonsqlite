@@ -34,7 +34,7 @@ class Object(object):
 
     @staticmethod
     def sort(objlist, keytosort):
-	if key.startswith('-'):
+	if keytosort.startswith('-'):
 	    keytosort = keytosort[1:]
 	    return sorted(objlist, key=lambda k: k[keytosort], reverse=True) 
 	else:
