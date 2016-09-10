@@ -36,9 +36,9 @@ class Object(object):
     def sort(objlist, keytosort):
 	if keytosort.startswith('-'):
 	    keytosort = keytosort[1:]
-	    return sorted(objlist, key=lambda k: k[keytosort], reverse=True) 
+	    return sorted(objlist, key=lambda k: k.__dict__[keytosort], reverse=True) 
 	else:
-	    return sorted(objlist, key=lambda k: k[keytosort])
+	    return sorted(objlist, key=lambda k: k.__dict__[keytosort])
 
     @classmethod
     def filter(cls, query, limit=-1, sort=None):
