@@ -15,6 +15,14 @@ class Object(object):
 	cls._db		= nonSQLiteClient(cls._db_name)
 	cls._collection = cls._db.getCollection(cls.__name__)
 
+
+    @classmethod
+    def drop(cls):
+	if cls._collection is None:
+	    cls.init()
+	cls._db.dropCollection(cls.__name__)
+
+
     @classmethod
     def checktype(cls, obj):
 	if cls._collection is None:
@@ -55,6 +63,22 @@ class Object(object):
 	    return ret
 	else:
 	    return cls.sort(ret, sort)
+
+    @classmethod
+    def count(cls, query);
+	if cls._collection is None:
+	    cls.init()
+
+	return cls._collection.count(query)
+
+
+    @classmethod
+    def len(cls):
+	if cls._collection is None:
+	    cls.init()
+
+	return cls._collection.len()
+
 
     @classmethod
     def filterAND(cls, querylist=[], sort=None):

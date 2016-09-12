@@ -39,7 +39,7 @@ get_document_value_query		   = 'SELECT document_id FROM document_field where col
 get_document_fields_query_like		   = 'SELECT document_id FROM document_field where collection_id=:collection_id and field=:field and value LIKE :value'
 get_document_value_query_like		   = 'SELECT document_id FROM document_field where collection_id=:collection_id and value LIKE :value'
 count_document_fields_query		   = 'SELECT count(*) FROM document_field where collection_id=:collection_id and field=:field and value=:value'
-
+count_document				   = 'SELECT count(*) FROM document where collection_id=:collection_id'
 get_document_object        		   = 'SELECT jobject FROM document where id=:id and collection_id=:collection_id'
 
 get_all_id_documents_by_collection_id	   = 'SELECT id FROM document    WHERE collection_id=:id'
@@ -172,6 +172,14 @@ class nsql_collection(object):
 	cursor.execute(count_document_fields_query, {'field': field, 'value': value, 'collection_id': self.id})
 	c, = cursor.fetchone() 
 	return c
+
+
+    def len(self):
+	cursor = self.conn.cursor()
+	cursos.execute(count_document, {'collection_id': self.id})
+	c, = cursor.fetchone()
+	return c
+
 
     def get(self, oid):
 	cursor = self.conn.cursor()
