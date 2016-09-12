@@ -34,7 +34,6 @@ app.config.update(dict(
     USERNAME='admin',
     PASSWORD='default'
 ))
-app.config.from_envvar('FLASKR_SETTINGS', silent=True)
 
 
 @app.route('/')
@@ -63,9 +62,9 @@ def login():
     error = None
     if request.method == 'POST':
         if request.form['username'] != app.config['USERNAME']:
-            error = 'Invalid username'
+            error = 'Invalid username or password'
         elif request.form['password'] != app.config['PASSWORD']:
-            error = 'Invalid password'
+            error = 'Invalid username or password'
         else:
             session['logged_in'] = True
             flash('You were logged in')
