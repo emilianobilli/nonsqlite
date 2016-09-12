@@ -176,7 +176,7 @@ class nsql_collection(object):
 
     def len(self):
 	cursor = self.conn.cursor()
-	cursos.execute(count_document, {'collection_id': self.id})
+	cursor.execute(count_document, {'collection_id': self.id})
 	c, = cursor.fetchone()
 	return c
 
