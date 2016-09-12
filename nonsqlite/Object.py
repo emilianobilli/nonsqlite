@@ -193,21 +193,24 @@ class Object(object):
 	    return cls.__load_document(ret[0])
 
 
-    @classmethod
-    def fromJsonList(cls, jsonlist=[]):
-	for json in jsonlist:
-	    obj = cls.loads(json)
-	    obj.save()
+#    @classmethod
+#    def fromJsonList(cls, jsonlist=[]):
+#	for json in jsonlist:
+#	    obj = cls.loads(json)
+#	    obj.save()
 
     @classmethod
     def loads(cls, document):
-	element = {}
-	element['document'] = document
-	element['_id']      = None
-
 	if cls._collection is None:
 	    cls.init()
-	return cls.__load_document(element)
+
+	json = loads(document)
+	for doc in json:
+	    element = {}
+	    element['document'] = dumps(doc)
+	    element['_id']      = None
+	    obj = cls.__load_document(element)
+	    obj.save()
 
     @classmethod
     def __load_document(cls, document):
