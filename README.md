@@ -2,7 +2,9 @@
 Non SQL Database over SQLite3
 
 ## Getting Started
-> $ pip install nonsqlite
+```
+$ pip install nonsqlite
+```
 
 This package install nonsqlite and Object modules
 
