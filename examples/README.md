@@ -10,6 +10,15 @@ python flaskObject.py
 
 Start a microblog in port 8000
 
+## Define the class
+```
+class Entry(Object):
+    _db_name = 'Blog.db' # If this class var is omitted use the default value Object.db
+    def __init__(self):
+        self.title = ''
+        self.entry = ''
+```
+
 ## Save Entry
 ```
 e = Entry()
