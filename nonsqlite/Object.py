@@ -65,7 +65,7 @@ class Object(object):
 	    return cls.sort(ret, sort)
 
     @classmethod
-    def count(cls, query);
+    def count(cls, query):
 	if cls._collection is None:
 	    cls.init()
 
