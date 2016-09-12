@@ -2,7 +2,9 @@
 Non SQL Database over SQLite3
 
 ## Getting Started
-> $ pip install nonsqlite
+```
+$ pip install nonsqlite
+```
 
 This package install nonsqlite and Object modules
 
@@ -65,4 +67,19 @@ a = Person.filter({'$': 'Piter'})
 ```
 a = Person.get({'name': 'Piter'})
 a.delete()
+```
+
+### Drop all Objects in collection
+```
+Person.drop()
+```
+
+### Count Objects with Occurrences
+```
+n = Person.count({'name': 'Piter'})
+```
+
+### Count all Objects in Collection
+```
+n = Person.len()
 ```
