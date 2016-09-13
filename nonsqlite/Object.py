@@ -53,6 +53,13 @@ class Object(object):
 	if cls._collection is None:
 	    cls.init()
 
+	key   = query.keys()[0]
+	value = query[key]
+
+	o, = value.__class__.__bases__
+	if o.__name__ == 'Object':
+	    query[key] = value.getid()
+
 	ret = []
 	element_list = cls._collection.find(query, limit)
 	for element in element_list:
@@ -189,6 +196,14 @@ class Object(object):
     def get(cls, query):
 	if cls._collection is None:
 	    cls.init()
+
+	key   = query.keys()[0]
+	value = query[key]
+
+	o, = value.__class__.__bases__
+	if o.__name__ == 'Object':
+	    query[key] = value.getid()
+
 	ret = cls._collection.findOne(query)
 	if ret != []:
 	    return cls.__load_document(ret[0])
