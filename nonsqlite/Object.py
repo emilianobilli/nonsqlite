@@ -95,13 +95,14 @@ class Object(object):
 	    return candidates
 
 	for c in candidates:
-	    flag = False
+	    occurrence = 0
 	    for o in objects[1:]:
 		for obj in o:
 		    if c.getid() == obj.getid():
-			flag = True
+			occurrence = occurrence + 1
+			break
 
-	    if flag:
+	    if occurrence == len(objects) - 1:
 	        ret.append(c)
 
 	if sort is None:
