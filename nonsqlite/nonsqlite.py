@@ -1,6 +1,8 @@
 import sqlite3
 import json
 import os
+import httplib2
+import urlparse
 
 
 COLLECTION = '''CREATE TABLE collection (
@@ -98,7 +100,173 @@ def toupletify (value, field_string, touple_list):
 
     return
 
-    	
+
+def nsql_http_endpoint(db, collection, body):
+    col = db.getCollection(collection)
+
+    command = json.loads(body)
+    cmd = command['command']
+    
+    #
+    # Insert Ready
+    if cmd == 'insert':
+	arg = command['argument']
+	return json.dumps(col.insert(json.dumps(arg['jobject'])))
+
+    #
+    # Non return
+    if cmd == 'update':
+	arg = command['argument']    
+	col.update(arg['oid'], json.dumps(arg['jobject']))
+	return ''
+
+    #
+    # Ready
+    if cmd == 'get':
+	arg = command['argument']
+	ret = con.get(arg['oid'])
+	if ret is not None:
+	    return json.dumps(ret)
+	else:
+	    return ''
+
+    if cmd == 'find':
+	arg = command['argument']
+	return json.dumps(col.find(arg['query'], arg['limit'], arg['like']))
+
+    #
+    # Return all objects
+    if cmd == 'all':
+	return json.dumps(col.all())
+
+    #
+    # Ready
+    if cmd == 'len':
+	return json.dumps({'value': col.len()})
+
+    #
+    # Ready
+    if cmd == 'count':
+	arg = command['argument']
+	return json.dumps({'value': col.count(arg['query'])})
+
+    if cmd == 'deleteDocument':
+	arg = command['argument']
+	return col.deleteDocument(arg['oid'])
+    
+
+
+class nsql_http_collection(object):
+    def __init__(self, id, ep, name):
+	self.id       = id
+	self.name     = name
+	self.endpoint = ep + name + '/'
+
+    def __post(self, url, body):
+	method = 'POST'
+	header = {'Content-Type': 'application/json'}
+	
+	h   = httplib2.Http()
+	uri = urlparse.urlparse(url)
+	response, content = h.request(uri.geturl(), method, json.dumps(body))
+	
+	if response['status'] == '200':
+	    return content
+	return None
+
+
+    #
+    # Insert
+    def insert(self, jobject):
+	cmd = {}
+	cmd['command']  = 'insert'
+	cmd['argument'] = {'jobject': json.loads(jobject)}
+
+	return json.loads(self.__post(self.endpoint, cmd))
+	
+
+    def update(self, did, jobject):
+	cmd = {}
+	cmd['command']  = 'update'
+	cmd['argument'] = {'oid': did, 'jobject': json.loads(jobject)}
+
+	return self.__post(self.endpoint, cmd)
+
+
+    #
+    # Ready
+    def get(self, oid):
+	cmd = {}
+	cmd['command']  = 'get'
+	cmd['argument'] = {'oid': oid}
+
+	ret = self.__post(self.endpoint, cmd)
+	if ret == '':
+	    return None
+
+	return json.loads(ret)
+
+    #
+    # Ready
+    def find(self, query, limit = 1, like = False):
+	cmd = {}
+	cmd['command']  = 'find'
+	cmd['argument'] = {'query': query, 'limit': limit, 'like': like}
+    
+	return json.loads(self.__post(self.endpoint, cmd))
+
+    #
+    # Ready
+    def all(self):
+	cmd = {}
+	cmd['command'] = 'all'
+
+	return json.loads(self.__post(self.endpoint, cmd))
+
+
+    #
+    # Ready
+    def len(self):
+	cmd = {}
+	cmd['command'] = 'len'
+
+	ret = json.loads(self.__post(self.endpoint, cmd))
+	return ret['value']
+
+    #
+    # Ready
+    def count(self, query):
+	cmd = {}
+	cmd['command']  = 'count'
+	cmd['argument'] = {'query': query}
+
+	ret = json.loads(self.__post(self.endpoint, cmd))
+	return ret['value']
+
+
+    def deleteDocument(self, did):
+	cmd = {}
+	cmd['command']  = 'deleteDocument'
+	cmd['argument'] = {'oid': did}
+
+	return self.__post(self.endpoint, cmd)
+
+
+    def findOne(self, query):
+	return self.find(query, 1)
+
+    def findAll(self, query):
+	return self.find(query, -1)
+
+    def findLikeOne(self, query):
+	return self.find(query, 1, True)
+
+    def findLikeAll(self, query):
+	return self.find(query, -1, True)
+
+
+
+
 
 class nsql_collection(object):
     def __init__(self, id, name, conn):
@@ -284,6 +452,13 @@ class nsql_collection(object):
 	pass
 
 
+class nsql_http_database(object):
+    def __init__(self, conn):
+	self.conn = conn
+
+    def getCollection(self, collection_name):
+	return nsql_http_collection(0, self.conn, collection_name)
+
     	    	
 class nsql_database(object):
     def __init__(self, conn):
@@ -361,8 +536,13 @@ class nsql_database(object):
 	cursor.execute(delete_collection,    { 'id': _id })
 	self.conn.commit()
 
+
 def nonSQLiteClient(database):
     create_tables = False
+
+    if database.startswith('http'):
+	return nsql_http_database(database)
+
     if database == ':memory:' or not os.path.isfile(database):
 	create_tables = True
 	
